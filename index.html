@@ -1,0 +1,170 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Wookiee-cache by Webtrends</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/github-light.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1>Wookiee-cache</h1>
+        <p>Wookiee Component - Cache</p>
+
+        <p class="view"><a href="https://github.com/Webtrends/wookiee-cache">View the Project on GitHub <small>Webtrends/wookiee-cache</small></a></p>
+
+
+        <ul>
+          <li><a href="https://github.com/Webtrends/wookiee-cache/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/Webtrends/wookiee-cache/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/Webtrends/wookiee-cache">View On <strong>GitHub</strong></a></li>
+        </ul>
+      </header>
+      <section>
+        <h1>
+<a id="wookiee---component-caching" class="anchor" href="#wookiee---component-caching" aria-hidden="true"><span class="octicon octicon-link"></span></a>Wookiee - Component Caching</h1>
+
+<p><a href="https://travis-ci.org/Webtrends/wookiee-cache"><img src="https://travis-ci.org/Webtrends/wookiee-cache.svg?branch=master" alt="Build Status"></a> <a href="https://coveralls.io/github/Webtrends/wookiee-cache?branch=master"><img src="https://coveralls.io/repos/Webtrends/wookiee-cache/badge.svg?branch=master&amp;service=github" alt="Coverage Status"></a> <a href="https://github.com/Webtrends/wookiee-cache/releases"><img src="https://img.shields.io/github/release/webtrends/wookiee-cache.svg" alt="Latest Release"></a> <a href="http://www.apache.org/licenses/LICENSE-2.0.txt"><img src="http://img.shields.io/:license-Apache%202-red.svg" alt="License"></a></p>
+
+<p><a href="https://github.com/Webtrends/wookiee">Main Wookiee Project</a></p>
+
+<p>For Configuration information see <a href="docs/config.md">Caching Config</a></p>
+
+<h2>
+<a id="creating-a-cache" class="anchor" href="#creating-a-cache" aria-hidden="true"><span class="octicon octicon-link"></span></a>Creating a Cache</h2>
+
+<p>Before we can create cache objects, we need to do the following:</p>
+
+<ul>
+<li>Add dependency to service pom</li>
+<li>Enable the CacheManager system component</li>
+<li>Initialize the cache in our service</li>
+</ul>
+
+<h3>
+<a id="adding-dependency-to-service-pom" class="anchor" href="#adding-dependency-to-service-pom" aria-hidden="true"><span class="octicon octicon-link"></span></a>Adding dependency to service POM</h3>
+
+<p>To add Wookiee caching you need to include the dependency into your maven pom, like below:</p>
+
+<pre><code>&lt;dependency&gt;
+  &lt;groupId&gt;com.webtrends&lt;/groupId&gt;
+  &lt;artifactId&gt;wookiee-cache&lt;/artifactId&gt;
+  &lt;version&gt;${platform.version}&lt;/version&gt;
+&lt;/dependency&gt;
+</code></pre>
+
+<p>This would then download the libraries that allow using the Cacheable Trait. By default this would only give you access to the in memory cache, which is not incredibly useful for most cases. Generally a specific caching module would be used that would depend on the module above. Currently there is a memcache module for use that you can use in your project by adding the following dependency:</p>
+
+<pre><code>&lt;dependency&gt;
+  &lt;groupId&gt;com.webtrends&lt;/groupId&gt;
+  &lt;artifactId&gt;wookiee-cache-memcache&lt;/artifactId&gt;
+  &lt;version&gt;${platform.version}&lt;/version&gt;
+&lt;/dependency&gt;
+</code></pre>
+
+<p>NOTE: If you use the above dependency you do not need the wookiee-cache dependency as it will be automatically used from the wookiee-cache-memcache module, and this should apply for any caching module that may be included later.</p>
+
+<h3>
+<a id="enable-caching-system-component" class="anchor" href="#enable-caching-system-component" aria-hidden="true"><span class="octicon octicon-link"></span></a>Enable Caching system component</h3>
+
+<p>If you wish to use the in-memory caching scheme, then you would enable the component in wookiee-cache.conf:</p>
+
+<pre><code>wookiee-cache {
+  manager = "com.webtrends.harness.component.cache.memory.MemoryManager"
+  enabled = true
+}
+</code></pre>
+
+<p>If you wish to use the memcache component, then you would enable the component in wookiee-cache-memcache.conf:</p>
+
+<pre><code>wookiee-cache-memcache {
+  manager = "com.webtrends.harness.component.memcache.MemcacheManager"
+  enabled = true
+}
+</code></pre>
+
+<p>Most of the configuration for Memcache itself would be defined by the application and not by Wookiee. Wookiee config simply loads up the manager for the clients, not the clients themselves. </p>
+
+<h3>
+<a id="initializing-a-cache" class="anchor" href="#initializing-a-cache" aria-hidden="true"><span class="octicon octicon-link"></span></a>Initializing a Cache</h3>
+
+<p>To actually be able to get and set to a Cache you need to initialize a cache in the CacheManager. Currently the only cache to use would be the MemcacheManager, which obviously requires Memcache servers to work correctly. Each cache that is initialized can be set to a different Memcache server, or they can all point to the same source, it is completely up to the developer and the requirements of the work. 
+The following code snippet would initialize a Memcache Client:</p>
+
+<pre><code>// build the cache for the report data
+val manager = context.actorSelection("/user/" + classOf[MemcacheManager].getName)
+val config = CacheConfig(
+  namespace = LookupConstants.MemcacheCacheName,
+  props = Some(Map("serverList" -&gt; context.system.settings.config.getString(LookupConstants.KeyMemcacheServer)))
+)
+manager ! CreateCache(config) // let MemcacheManager handle the exceptions if any
+</code></pre>
+
+<p>Let's go through this line by line.</p>
+
+<ul>
+<li>Line 1: This calls the MemcacheManager that was loaded as a Actor SystemComponent. This what we will be using to make all our calls for MemCache</li>
+<li>Line 2: Create a CacheConfig object, which holds all relevant information for creating a cache.</li>
+<li>Line 3: Raise an event to the MemcacheManager to create a cache with the config supplied.</li>
+</ul>
+
+<p>Once the cache is supplied you can use the following events against the MemcacheManager:</p>
+
+<ul>
+<li>CreateCache(config:Config) - Creates a cache with the supplied configuration</li>
+<li>Get - retrieves an object stored in the cache</li>
+<li>Add - Adds an object to the cache</li>
+<li>Delete - Deletes an object from the cache</li>
+<li>Decrement - Creates an integer based object in the cache and decrements the value</li>
+<li>Increment - Creates an integer based object in the cache and increments the value</li>
+<li>Contains - Checks to see whether an object is in the cache</li>
+<li>Clear - Clears the cache</li>
+</ul>
+
+<p>With this you can perform basic functionality against the newly created cache. However if you are dealing with a specific object you are trying to store in the cache, you can more easily manage that through the Cacheable object trait. This will then handle all the serializing and deserializing of the object to and from the cache.</p>
+
+<h2>
+<a id="creating-a-cacheable-object" class="anchor" href="#creating-a-cacheable-object" aria-hidden="true"><span class="octicon octicon-link"></span></a>Creating a Cacheable Object</h2>
+
+<p>A cacheable object is simply an object that uses the Cacheable trait from the wookiee-cache library. Once an object is cacheable it provides two methods that you don't need to implement as the base implementations will write to the cache and read from the cache without any further code.
+The cacheable object is required to implement two methods:</p>
+
+<ul>
+<li>key - This function simply returns the key for the object, the cache functions from the cacheable trait allow for sending in the key for each function call, so you can simply return empty string if you don't plan on internalizing the key</li>
+<li>namespace - This is required and should be defined based on the namespace that was supplied to the cache when it was created.</li>
+</ul>
+
+<pre><code>def readFromCache(cacheRef:ActorSelection, cacheKey:Option[String])
+      (implicit timeout:Timeout, executor:ExecutionContext, m:Manifest[T]) : Future[Option[T]]
+</code></pre>
+
+<p>The readFromCache will then require the reference to the Actor for the CacheManager, which can be either and ActorRef or an ActorSelection object. The cacheKey can be left as NONE if the key for the object is defined correctly by the key function in your cacheable object.</p>
+
+<pre><code>def writeInCache(cacheRef:ActorSelection, cacheKey:Option[String])
+      (implicit timeout:Timeout, executor:ExecutionContext) : Unit
+</code></pre>
+
+<p>The writeInCache will take the same parameters as readFromCache and simply write the current object to the cache. So there would be a little up front work to find the actor, otherwise you can simply use the Cacheable trait and call these two functions to get and set your object into a cache.</p>
+
+<h3>
+<a id="data-timeout" class="anchor" href="#data-timeout" aria-hidden="true"><span class="octicon octicon-link"></span></a>Data Timeout</h3>
+
+<p>By default an object will remain in cache until it is either specifically deleted from the cache, or in the case of Memcache, until the servers are restarted. (The Memcache servers, not Wookiee) 
+This is not always the best approach, so another way is to allow the user to set how long the object will remain in the cache until it is evicted. The dataTimeout method returns a Long in milliseconds to define that time. Every time an object is stored in the cache it wraps the object and places the current time into the wrapped object. When the object is retrieved it checks to see whether the objects insertion time is older than the current time minus the timeout value retrieved from the dataTimeout method on the object. If it is the object is rejected and deleted and NONE is returned.</p>
+      </section>
+      <footer>
+        <p>This project is maintained by <a href="https://github.com/Webtrends">Webtrends</a></p>
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+      </footer>
+    </div>
+    <script src="javascripts/scale.fix.js"></script>
+    
+  </body>
+</html>
