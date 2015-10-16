@@ -1,0 +1,44 @@
+/*
+ * Copyright 2015 Webtrends (http://www.webtrends.com)
+ *
+ * See the LICENCE.txt file distributed with this work for additional
+ * information regarding copyright ownership.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.webtrends.harness.component.cache
+
+import java.util.concurrent.TimeUnit._
+
+import akka.actor.{ActorSystem, Props}
+import akka.testkit.TestActorRef
+import akka.util.Timeout
+import com.webtrends.harness.component.cache.memory.MemoryManager
+import org.junit.runner.RunWith
+import org.specs2.runner.JUnitRunner
+
+@RunWith(classOf[JUnitRunner])
+class BaseSpecCache extends TestKitSpecificationWithJUnit(ActorSystem("test")) {
+  val cacheRef = TestActorRef(Props(classOf[MemoryManager],"test-memory-cache"))
+  implicit val timeout = Timeout(2, SECONDS)
+
+  cacheRef ! CreateCache(
+    CacheConfig(
+      namespace = BaseSpecCache.ns
+    )
+  )
+}
+
+object BaseSpecCache {
+  val ns = "test-cache"
+}
