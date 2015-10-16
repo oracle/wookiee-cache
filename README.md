@@ -106,3 +106,8 @@ The writeInCache will take the same parameters as readFromCache and simply write
 ###Data Timeout
 By default an object will remain in cache until it is either specifically deleted from the cache, or in the case of Memcache, until the servers are restarted. (The Memcache servers, not Wookiee) 
 This is not always the best approach, so another way is to allow the user to set how long the object will remain in the cache until it is evicted. The dataTimeout method returns a Long in milliseconds to define that time. Every time an object is stored in the cache it wraps the object and places the current time into the wrapped object. When the object is retrieved it checks to see whether the objects insertion time is older than the current time minus the timeout value retrieved from the dataTimeout method on the object. If it is the object is rejected and deleted and NONE is returned.
+
+###Compression
+Mix the Compression trait into cacheable objects to deflate when _writeInCache_ and inflate when _readFromCache_.
+
+* namespace - Override this value to change the default level of compression
