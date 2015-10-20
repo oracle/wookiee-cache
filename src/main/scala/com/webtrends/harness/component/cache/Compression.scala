@@ -37,6 +37,7 @@ trait Compression[T] {
   protected def level:Int = Deflater.DEFAULT_COMPRESSION
 
   override protected def extract(obj: Array[Byte])(implicit m: Manifest[T]): Option[T] = {
+    inflater.reset()
     inflater.setInput(obj)
     Some(JsonParser.parse(new String(inflate(), StandardCharsets.UTF_8)).extract[T])
   }
@@ -45,7 +46,6 @@ trait Compression[T] {
     val len = inflater.inflate(iBuffer)
 
     if (inflater.finished) {
-      inflater.reset()
       result ++ iBuffer.take(len)
     } else {
       inflate(result ++ iBuffer.take(len))
@@ -53,20 +53,29 @@ trait Compression[T] {
   }
 
   override protected def getBytes: Array[Byte] = {
+    deflater.reset()
     deflater.setInput(compactRender(decompose(this)).getBytes(StandardCharsets.UTF_8))
     deflater.finish()
     deflate()
   }
 
-  def deflate(result: Array[Byte] = Array.empty[Byte]): Array[Byte] = {
+  private def deflate(result: Array[Byte] = Array.empty[Byte]): Array[Byte] = {
     val len = deflater.deflate(oBuffer)
 
     if (deflater.finished()) {
-      deflater.reset()
       result ++ oBuffer.take(len)
     }
     else {
       deflate(result ++ oBuffer.take(len))
     }
   }
+
+  def compressionRatio: Option[Double] =
+    if (deflater.finished() && deflater.getBytesWritten > 0)
+      Some(deflater.getBytesRead.toDouble / deflater.getBytesWritten)
+    else None
+
+  def compressedSize: Option[Long] =
+    if (deflater.finished()) Some(deflater.getBytesWritten)
+    else None
 }
