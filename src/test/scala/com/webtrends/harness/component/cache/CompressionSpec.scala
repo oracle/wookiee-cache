@@ -47,17 +47,22 @@ class CompressionSpec extends BaseSpecCache {
     }
 
     "be compressed when cached" in {
-      val bigData = new Random(System.currentTimeMillis()).nextString(2048)
-      val cKey = new CacheKey(1,"compressed", false)
-      CompressedData(bigData).writeInCache(cacheRef, Some(cKey))
-
-      val uKey = new CacheKey(1,"uncompressed", false)
-      StandardData(bigData).writeInCache(cacheRef, Some(uKey))
-
       val cacheActor = cacheRef.underlyingActor.asInstanceOf[MemoryManager]
-      cacheActor.caches(ns)(cKey.toString()).buffer.array().size must beLessThan(
-        cacheActor.caches(ns)(uKey.toString()).buffer.array().size
-      )
+
+      val bigData = new Random(System.currentTimeMillis()).nextString(2048)
+      val uKey = new CacheKey(1,"uncompressed", false)
+      val uObj = StandardData(bigData)
+      uObj.writeInCache(cacheRef, Some(uKey))
+      val uSize = cacheActor.caches(ns)(uKey.toString()).buffer.array().size
+
+      val cKey = new CacheKey(1,"compressed", false)
+      val cObj = CompressedData(bigData)
+      cObj.writeInCache(cacheRef, Some(cKey))
+      val cSize = cacheActor.caches(ns)(cKey.toString()).buffer.array().size
+
+      cSize must beLessThan(uSize)
+      cObj.compressionRatio.get must beGreaterThan(1.0d)
+      cObj.compressedSize.get must beLessThan(uSize.toLong)
     }
   }
 }
