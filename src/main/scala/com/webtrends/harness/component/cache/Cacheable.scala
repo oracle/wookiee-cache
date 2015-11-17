@@ -211,6 +211,20 @@ trait Cacheable[T] extends Serializable {
     p.future
   }
 
+  def deleteFromCacheSelect(cacheRef:ActorSelection, cacheKey:Option[CacheKey]=None)
+                        (implicit timeout:Timeout, executor:ExecutionContext) : Future[Boolean] = {
+    val p = Promise[Boolean]
+    cacheRef.resolveOne onComplete {
+      case Success(succ) =>
+        deleteFromCache(succ, cacheKey)(timeout, executor) onComplete {
+          case Success(s) => p success true
+          case Failure(f) => p success false
+        }
+      case Failure(f) => throw f
+    }
+    p.future
+  }
+
   private def wrapData : ChannelBuffer = {
     val wrapper = CacheWrapper(this.getBytes, compat.Platform.currentTime)
     ChannelBuffers.wrappedBuffer(wrapper.pickle.value)
