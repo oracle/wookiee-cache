@@ -225,12 +225,12 @@ trait Cacheable[T] extends Serializable {
     p.future
   }
 
-  private def wrapData : ChannelBuffer = {
+  def wrapData : ChannelBuffer = {
     val wrapper = CacheWrapper(this.getBytes, compat.Platform.currentTime)
     ChannelBuffers.wrappedBuffer(wrapper.pickle.value)
   }
 
-  private def unwrapData(data:Option[ChannelBuffer])(implicit m:Manifest[T]) : Option[T] = {
+  def unwrapData(data:Option[ChannelBuffer])(implicit m:Manifest[T]) : Option[T] = {
     data match {
       case Some(buffer) =>
         val wrapper = buffer.array.unpickle[CacheWrapper]
