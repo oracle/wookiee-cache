@@ -18,6 +18,7 @@
  */
 package com.webtrends.harness.component.cache
 
+import java.io.{ObjectInputStream, ByteArrayInputStream, ObjectOutputStream, ByteArrayOutputStream}
 import java.nio.charset.StandardCharsets
 
 import akka.pattern.Patterns
@@ -33,6 +34,7 @@ import akka.util.Timeout
 import scala.concurrent.duration.Duration
 import scala.pickling._
 import binary._
+import com.webtrends.harness.utils.Loan._
 
 /**
  * Trait to help with caching objects in the wookiee-cache
@@ -86,14 +88,37 @@ trait Cacheable[T] extends Serializable {
   }
 
   /**
+    * Convenience method that one can call (after overriding extract) to convert bytes to a Serializable class.
+    * Be sure to also override getBytes and call serialToBytes.
+    */
+  protected def bytesToSerial(obj:Array[Byte]) : Option[T] = {
+    loan (new ByteArrayInputStream(obj)) to { ba =>
+      loan (new ObjectInputStream(ba)) to { os =>
+        Some(os.readObject().asInstanceOf[T])
+      }
+    }
+  }
+
+  /**
    * getBytes function allows cacheable object to have control over how it writes the data to memcache
    * By default it will use Lift JSON to decompose then render the object from json to a string and
    * then simply call getBytes on the string
-   *
-   * @return
    */
   protected def getBytes : Array[Byte] = {
     compactRender(decompose(this)).getBytes(StandardCharsets.UTF_8)
+  }
+
+  /**
+    * Convenience method that one can call (after overriding getBytes) to convert a Serializable class
+    * to bytes to store in memcache. Be sure to also override extract and call bytesToSerial.
+    */
+  protected def serialToBytes(obj: Serializable) : Array[Byte] = {
+    loan (new ByteArrayOutputStream()) to { bs =>
+      loan (new ObjectOutputStream(bs)) to { os =>
+        os.writeObject(obj)
+      }
+      bs.toByteArray()
+    }
   }
 
   /**
@@ -145,7 +170,7 @@ trait Cacheable[T] extends Serializable {
     future onComplete {
       case Success(s) =>
         unwrapData(s) match {
-          case Some(s) => p success Some(s)
+          case Some(succ) => p success Some(succ)
           case None =>
             cacheRef ! Delete(namespace, ck)
             p success None
@@ -161,7 +186,7 @@ trait Cacheable[T] extends Serializable {
     cacheRef.resolveOne onComplete {
       case Success(s) =>
         writeInCache(s, cacheKey)(timeout, executor) onComplete {
-          case Success(s) => p success true
+          case Success(succ) => p success true
           case Failure(f) => p success false
         }
       case Failure(f) => throw f
@@ -249,7 +274,7 @@ trait Cacheable[T] extends Serializable {
 
   protected def getCacheKey(cacheKey:Option[CacheKey]) : String = {
     cacheKey match {
-      case Some(s) => s.toString
+      case Some(s) => s.toString()
       case None => key
     }
   }

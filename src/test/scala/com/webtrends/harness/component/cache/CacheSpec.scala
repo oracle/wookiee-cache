@@ -24,6 +24,16 @@ case class SimpleData(a:Int = 0, b:String = "", c:Double = 0.0) extends Cacheabl
   override def namespace = ns
 }
 
+case class SerialData(a:Int = 0, b:String = "", c:Double = 0.0) extends Cacheable[SimpleData] with Serializable {
+  override def namespace = ns
+
+  override protected def getBytes: Array[Byte] = serialToBytes(this)
+
+  override protected def extract(obj: Array[Byte])(implicit m: Manifest[SimpleData]): Option[SimpleData] = {
+    bytesToSerial(obj)
+  }
+}
+
 class CacheSpec extends BaseSpecCache {
   "A cacheable object" should {
 
@@ -34,6 +44,15 @@ class CacheSpec extends BaseSpecCache {
 
       val found = SimpleData().readFromCache(cacheRef, Some(key))
       found must beEqualTo(Some(SimpleData(1, "two", 3.0))).await()
+    }
+
+    "be cacheable" in {
+      val obj = SerialData(4, "five", 6.0)
+      val key = new CacheKey(4, "five", false)
+      obj.writeInCache(cacheRef, Some(key))
+
+      val found = SerialData().readFromCache(cacheRef, Some(key))
+      found must beEqualTo(Some(SerialData(4, "five", 6.0))).await()
     }
   }
 }
