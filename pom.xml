@@ -17,10 +17,11 @@
         <build>${build.number}</build>
         <build-artifact-name>${project.artifactId}-${project.version}</build-artifact-name>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <akka.version>2.4.9</akka.version>
         <scala.artifact.version>2.11</scala.artifact.version>
         <scala.version>${scala.artifact.version}.4</scala.version>
         <scoverage.plugin.version>1.1.1</scoverage.plugin.version>
-        <wookiee.core.version>1.1.13</wookiee.core.version>
+        <wookiee.core.version>1.2.0</wookiee.core.version>
     </properties>
 
     <groupId>com.webtrends</groupId>
@@ -139,7 +140,7 @@
         <dependency>
             <groupId>com.typesafe.akka</groupId>
             <artifactId>akka-cluster_${scala.artifact.version}</artifactId>
-            <version>2.3.12</version>
+            <version>${akka.version}</version>
         </dependency>
         <dependency>
             <groupId>org.scala-lang</groupId>
@@ -164,7 +165,7 @@
         <dependency>
             <groupId>com.typesafe.akka</groupId>
             <artifactId>akka-testkit_2.11</artifactId>
-            <version>2.3.4</version>
+            <version>${akka.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
