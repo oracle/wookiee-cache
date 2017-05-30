@@ -18,19 +18,23 @@
  */
 package com.webtrends.harness.component.cache
 
-import java.io.{ObjectInputStream, ByteArrayInputStream, ObjectOutputStream, ByteArrayOutputStream}
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream, ObjectInputStream, ObjectOutputStream}
 import java.nio.charset.StandardCharsets
 
 import akka.pattern.Patterns
-import akka.actor.{ActorSelection, ActorRef}
+import akka.actor.{ActorRef, ActorSelection}
 import org.jboss.netty.buffer.{ChannelBuffer, ChannelBuffers}
 import net.liftweb.json._
 import net.liftweb.json.ext.JodaTimeSerializers
+
 import scala.concurrent._
 import net.liftweb.json.Extraction._
+
 import scala.util.Success
 import scala.util.Failure
 import akka.util.Timeout
+import com.webtrends.harness.logging.Logger
+
 import scala.concurrent.duration.Duration
 import scala.pickling._
 import binary._
@@ -50,8 +54,7 @@ trait Cacheable[T] extends Serializable {
   // This is a wrapper object that will basically wrap the object with an insertion time and any other meta data that it may require
   @SerialVersionUID(10L)
   protected case class CacheWrapper(data:Array[Byte], insertionTime:Long=0L) extends Serializable
-
-  @transient implicit def liftJsonFormats = DefaultFormats.lossless + NoTypeHints ++ JodaTimeSerializers.all
+  @transient implicit def liftJsonFormats:Formats = DefaultFormats.lossless + NoTypeHints ++ JodaTimeSerializers.all
   @transient implicit val timeout = Timeout(Duration(1, "seconds"))
 
   /**
@@ -117,7 +120,7 @@ trait Cacheable[T] extends Serializable {
       loan (new ObjectOutputStream(bs)) to { os =>
         os.writeObject(obj)
       }
-      bs.toByteArray()
+      bs.toByteArray
     }
   }
 
@@ -130,11 +133,7 @@ trait Cacheable[T] extends Serializable {
    *         was inserted into the cache
    */
   protected def checkTimeout(insertionTime:Long) : Boolean = {
-    if (dataTimeout < 0 || compat.Platform.currentTime - dataTimeout <= insertionTime) {
-      true
-    } else {
-      false
-    }
+    dataTimeout < 0 || compat.Platform.currentTime - dataTimeout <= insertionTime
   }
 
   def readFromCacheSelect(cacheRef:ActorSelection, cacheKey:Option[CacheKey]=None)
@@ -144,13 +143,9 @@ trait Cacheable[T] extends Serializable {
       case Success(s) =>
         readFromCache(s, cacheKey)(timeout, executor, m) onComplete {
           case Success(result) => p success result
-          case Failure(f) =>
-            p success None
-            throw f
+          case Failure(f) => p failure f
         }
-      case Failure(f) =>
-        p success None
-        throw f
+      case Failure(f) => p failure f
     }
     p.future
   }
@@ -170,12 +165,13 @@ trait Cacheable[T] extends Serializable {
     future onComplete {
       case Success(s) =>
         unwrapData(s) match {
-          case Some(succ) => p success Some(succ)
+          case Some(succ) =>
+            p success Some(succ)
           case None =>
             cacheRef ! Delete(namespace, ck)
             p success None
         }
-      case Failure(f) => throw f
+      case Failure(f) => p failure f
     }
     p.future
   }
@@ -186,10 +182,10 @@ trait Cacheable[T] extends Serializable {
     cacheRef.resolveOne onComplete {
       case Success(s) =>
         writeInCache(s, cacheKey)(timeout, executor) onComplete {
-          case Success(succ) => p success true
-          case Failure(f) => p success false
+          case Success(_) => p success true
+          case Failure(f) => p failure f
         }
-      case Failure(f) => throw f
+      case Failure(f) => p failure f
     }
     p.future
   }
@@ -206,10 +202,8 @@ trait Cacheable[T] extends Serializable {
     val p = Promise[Boolean]
     val future = Patterns.ask(cacheRef, Add(namespace, getCacheKey(cacheKey), wrapData), timeout).mapTo[Boolean]
     future onComplete {
-      case Success(s) => p success true
-      case Failure(f) =>
-        p failure f
-        throw f
+      case Success(_) => p success true
+      case Failure(f) => p failure f
     }
     p.future
   }
@@ -228,10 +222,8 @@ trait Cacheable[T] extends Serializable {
     val p = Promise[Boolean]
     val future = Patterns.ask(cacheRef, Delete(namespace, getCacheKey(cacheKey)), timeout).mapTo[Boolean]
     future onComplete {
-      case Success(s) => p success true
-      case Failure(f) =>
-        p failure f
-        throw f
+      case Success(_) => p success true
+      case Failure(f) => p failure f
     }
     p.future
   }
@@ -242,10 +234,10 @@ trait Cacheable[T] extends Serializable {
     cacheRef.resolveOne onComplete {
       case Success(succ) =>
         deleteFromCache(succ, cacheKey)(timeout, executor) onComplete {
-          case Success(s) => p success true
-          case Failure(f) => p success false
+          case Success(_) => p success true
+          case Failure(f) => p failure f
         }
-      case Failure(f) => throw f
+      case Failure(f) => p failure f
     }
     p.future
   }
@@ -260,13 +252,8 @@ trait Cacheable[T] extends Serializable {
       case Some(buffer) =>
         val wrapper = buffer.array.unpickle[CacheWrapper]
         extract(wrapper.data) match {
-          case Some(value) =>
-            if (checkTimeout(wrapper.insertionTime)) {
-              Some(value)
-            } else {
-              None
-            }
-          case None => None
+          case Some(value) if checkTimeout(wrapper.insertionTime) => Some(value)
+          case _ => None
         }
       case None => None
     }
