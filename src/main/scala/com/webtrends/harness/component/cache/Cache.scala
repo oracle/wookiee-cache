@@ -26,8 +26,7 @@ import scala.concurrent.Future
 // Messages for Caching
 case class CreateCache(config:CacheConfig)
 case class Get(namespace:String, key:String)
-case class AddBytes(namespace:String, key:String, value:Array[Byte])
-case class Add(namespace:String, key:String, value:ChannelBuffer)
+case class Add(namespace:String, key:String, value:Array[Byte], ttlSec: Option[Int])
 case class Delete(namespace:String, key:String)
 case class DeleteCache(namespace:String)
 case class Decrement(namespace:String, key:String, decrementBy:Long=1L)
@@ -50,10 +49,7 @@ abstract class Cache(name:String) extends Component(name) {
     case CreateCache(config) => sender ! createCache(config)
     case DeleteCache(namespace) => sender ! deleteCache(namespace)
     case Get(namespace, key) => pipe(get(namespace, key)) to sender
-    case AddBytes(namespace, key, value) =>
-      val buffer = ChannelBuffers.wrappedBuffer(value)
-      pipe(add(namespace, key, buffer)) to sender
-    case Add(namespace, key, value) => pipe(add(namespace, key, value)) to sender
+    case Add(namespace, key, value, ttlSec) => pipe(add(namespace, key, value, ttlSec)) to sender
     case Delete(namespace, key) => pipe(delete(namespace, key)) to sender
     case Decrement(namespace, key, decrementBy) => pipe(decrement(namespace, key, decrementBy)) to sender
     case Increment(namespace, key, incrementBy) => pipe(increment(namespace, key, incrementBy)) to sender
@@ -70,8 +66,8 @@ abstract class Cache(name:String) extends Component(name) {
    */
   protected def createCache(config:CacheConfig) : Boolean
   protected def deleteCache(namespace:String) : Boolean
-  protected def get(namespace:String, key:String) : Future[Option[ChannelBuffer]]
-  protected def add(namespace:String, key:String, value:ChannelBuffer) : Future[Boolean]
+  protected def get(namespace:String, key:String) : Future[Option[Array[Byte]]]
+  protected def add(namespace:String, key:String, value:Array[Byte], ttlSec: Option[Int]) : Future[Boolean]
   protected def delete(namespace:String, key:String) : Future[Boolean]
   protected def increment(namespace:String, key:String, incrementBy:Long) : Future[Option[Long]]
   protected def decrement(namespace:String, key:String, decrementBy:Long) : Future[Option[Long]]

@@ -53,12 +53,12 @@ class CompressionSpec extends BaseSpecCache {
       val uKey = new CacheKey(1,"uncompressed", false)
       val uObj = StandardData(bigData)
       uObj.writeInCache(cacheRef, Some(uKey))
-      val uSize = cacheActor.caches(ns)(uKey.toString()).buffer.array().size
+      val uSize = cacheActor.caches(ns)(uKey.toString()).buffer.length
 
       val cKey = new CacheKey(1,"compressed", false)
       val cObj = CompressedData(bigData)
       cObj.writeInCache(cacheRef, Some(cKey))
-      val cSize = cacheActor.caches(ns)(cKey.toString()).buffer.array().size
+      val cSize = cacheActor.caches(ns)(cKey.toString()).buffer.length
 
       cSize must beLessThan(uSize)
       cObj.compressionRatio.get must beGreaterThan(1.0d)
