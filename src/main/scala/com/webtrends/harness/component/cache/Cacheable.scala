@@ -47,8 +47,6 @@ trait Cacheable[T] extends Serializable {
 
   @transient implicit def liftJsonFormats:Formats = DefaultFormats.lossless + NoTypeHints ++ JodaTimeSerializers.all
 
-  //@transient implicit val timeout = Timeout(Duration(1, "seconds"))
-
   /**
    * Gets the ttl for the data in the cache, by default will be set to None which means it will never time out
    * The value is in milliseconds. The ttl logic will be up to the specific cache implementation to maintain.
