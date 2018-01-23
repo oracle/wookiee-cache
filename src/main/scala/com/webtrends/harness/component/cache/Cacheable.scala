@@ -23,9 +23,7 @@ import java.nio.charset.StandardCharsets
 
 import akka.pattern.Patterns
 import akka.actor.{ActorRef, ActorSelection}
-import org.jboss.netty.buffer.{ChannelBuffer, ChannelBuffers}
 import net.liftweb.json._
-import net.liftweb.json.ext.JodaTimeSerializers
 
 import scala.concurrent._
 import net.liftweb.json.Extraction._
@@ -33,12 +31,8 @@ import net.liftweb.json.Extraction._
 import scala.util.Success
 import scala.util.Failure
 import akka.util.Timeout
-import com.webtrends.harness.logging.Logger
-
-import scala.concurrent.duration.Duration
-import scala.pickling._
-import binary._
 import com.webtrends.harness.utils.Loan._
+import net.liftweb.json.ext.JodaTimeSerializers
 
 /**
  * Trait to help with caching objects in the wookiee-cache
@@ -51,19 +45,18 @@ import com.webtrends.harness.utils.Loan._
 trait Cacheable[T] extends Serializable {
   this : Serializable =>
 
-  // This is a wrapper object that will basically wrap the object with an insertion time and any other meta data that it may require
-  @SerialVersionUID(10L)
-  protected case class CacheWrapper(data:Array[Byte], insertionTime:Long=0L) extends Serializable
   @transient implicit def liftJsonFormats:Formats = DefaultFormats.lossless + NoTypeHints ++ JodaTimeSerializers.all
-  @transient implicit val timeout = Timeout(Duration(1, "seconds"))
+
+  //@transient implicit val timeout = Timeout(Duration(1, "seconds"))
 
   /**
-   * Gets the timeout for the data in the cache, by default will be set to 0L which means it will never time out
-   * The value is in milliseconds
+   * Gets the ttl for the data in the cache, by default will be set to None which means it will never time out
+   * The value is in milliseconds. The ttl logic will be up to the specific cache implementation to maintain.
+   * This can be overridden on individual calls to write
    *
-   * @return milliseconds for timeout of data in cache
+   * @return Optional milliseconds for ttl of data in cache
    */
-  def dataTimeout : Long = -1L
+  def dataTimeout : Option[Long] = None
 
   /**
    * The key used to cache the object
@@ -124,18 +117,6 @@ trait Cacheable[T] extends Serializable {
     }
   }
 
-  /**
-   * Checks to see if the object that was stored in the cache is past the timeout, if it
-   * is then then false else true, if timeout is 0L then assumes no timeout and will always return true
-   *
-   * @param insertionTime the time the object was inserted into the cache
-   * @return true if current time subtract the timeout for the object is less than or equal too the time the object
-   *         was inserted into the cache
-   */
-  protected def checkTimeout(insertionTime:Long) : Boolean = {
-    dataTimeout < 0 || compat.Platform.currentTime - dataTimeout <= insertionTime
-  }
-
   def readFromCacheSelect(cacheRef:ActorSelection, cacheKey:Option[CacheKey]=None)
       (implicit timeout:Timeout, executor:ExecutionContext, m:Manifest[T]) : Future[Option[T]] = {
     val p = Promise[Option[T]]
@@ -161,27 +142,22 @@ trait Cacheable[T] extends Serializable {
       (implicit timeout:Timeout, executor:ExecutionContext, m:Manifest[T]) : Future[Option[T]] = {
     val ck = getCacheKey(cacheKey)
     val p = Promise[Option[T]]
-    val future = Patterns.ask(cacheRef, Get(namespace, ck), timeout).mapTo[Option[ChannelBuffer]]
+    val future = Patterns.ask(cacheRef, Get(namespace, ck), timeout).mapTo[Option[Array[Byte]]]
     future onComplete {
-      case Success(s) =>
-        unwrapData(s) match {
-          case Some(succ) =>
-            p success Some(succ)
-          case None =>
-            cacheRef ! Delete(namespace, ck)
-            p success None
-        }
+      case Success(Some(d)) => p success extract(d)
+      case Success(None) => p success None
       case Failure(f) => p failure f
     }
     p.future
   }
 
-  def writeInCacheSelect(cacheRef:ActorSelection, cacheKey:Option[CacheKey]=None)
+  def writeInCacheSelect(cacheRef:ActorSelection, cacheKey:Option[CacheKey]=None,
+                         ttlSec: Option[Int] = dataTimeout.map(_.toInt / 1000))
       (implicit timeout:Timeout, executor:ExecutionContext) : Future[Boolean] = {
     val p = Promise[Boolean]
     cacheRef.resolveOne onComplete {
       case Success(s) =>
-        writeInCache(s, cacheKey)(timeout, executor) onComplete {
+        writeInCache(s, cacheKey, ttlSec)(timeout, executor) onComplete {
           case Success(_) => p success true
           case Failure(f) => p failure f
         }
@@ -197,10 +173,12 @@ trait Cacheable[T] extends Serializable {
    * @param timeout Timeout for the cache read
    * @return
    */
-  def writeInCache(cacheRef:ActorRef, cacheKey:Option[CacheKey]=None)
+  def writeInCache(cacheRef:ActorRef, cacheKey:Option[CacheKey]=None,
+                   ttlSec: Option[Int] = dataTimeout.map(_.toInt / 1000))
       (implicit timeout:Timeout, executor:ExecutionContext) : Future[Boolean] = {
     val p = Promise[Boolean]
-    val future = Patterns.ask(cacheRef, Add(namespace, getCacheKey(cacheKey), wrapData), timeout).mapTo[Boolean]
+    val future = Patterns.ask(
+      cacheRef, Add(namespace, getCacheKey(cacheKey), this.getBytes, ttlSec), timeout).mapTo[Boolean]
     future onComplete {
       case Success(_) => p success true
       case Failure(f) => p failure f
@@ -242,21 +220,8 @@ trait Cacheable[T] extends Serializable {
     p.future
   }
 
-  def wrapData : ChannelBuffer = {
-    val wrapper = CacheWrapper(this.getBytes, compat.Platform.currentTime)
-    ChannelBuffers.wrappedBuffer(wrapper.pickle.value)
-  }
-
-  def unwrapData(data:Option[ChannelBuffer])(implicit m:Manifest[T]) : Option[T] = {
-    data match {
-      case Some(buffer) =>
-        val wrapper = buffer.array.unpickle[CacheWrapper]
-        extract(wrapper.data) match {
-          case Some(value) if checkTimeout(wrapper.insertionTime) => Some(value)
-          case _ => None
-        }
-      case None => None
-    }
+  def deserialize(data:Array[Byte])(implicit m:Manifest[T]) : Option[T] = {
+    extract(data)
   }
 
   protected def getCacheKey(cacheKey:Option[CacheKey]) : String = {

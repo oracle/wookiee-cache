@@ -141,11 +141,6 @@
             <version>${akka.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.scala-lang</groupId>
-            <artifactId>scala-pickling_${scala.artifact.version}</artifactId>
-            <version>0.9.1</version>
-        </dependency>
-        <dependency>
             <groupId>net.liftweb</groupId>
             <artifactId>lift-json-ext_${scala.artifact.version}</artifactId>
             <version>2.6-RC2</version>
