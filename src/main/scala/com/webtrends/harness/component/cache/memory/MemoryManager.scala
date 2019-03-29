@@ -31,9 +31,9 @@ import scala.concurrent.duration.Duration
  * issues with this approach, you wouldn't use it if you wanted the cache to be distributed or if the
  * data became too large.
  *
- * It is a TTL cache that will default to 5 minutes until it expires elements.
+ * TTL for cached items will default to 5 minutes if not specified
  */
-case class TimedChannelBuffer(insertionTime:Long, buffer:ChannelBuffer)
+case class TimedChannelBuffer(expirationTime:Long, buffer:Array[Byte])
 
 object MemoryManager {
   val caches = mutable.Map[String, mutable.Map[String, TimedChannelBuffer]]()
@@ -43,15 +43,15 @@ class MemoryManager(name:String) extends Cache(name) {
 
   def caches = MemoryManager.caches
 
-  protected val DEFAULT_TTL = 75L
-
   import context.dispatcher
 
-  protected val ttl = if (config.hasPath(s"$name.ttl")) {
-    Duration(config.getLong(s"$name.ttl"), "seconds")
+  protected val DEFAULT_TTL_SEC = if (config.hasPath(s"$name.ttl")) {
+    config.getLong(s"$name.ttl")
   } else {
-    Duration(DEFAULT_TTL, "seconds")
+    300     // 5 minutes
   }
+
+  private val expireInterval = Duration(DEFAULT_TTL_SEC, "seconds")
 
   private[this] val scheduler = context.system.scheduler
   private[this] var taskRunning: Boolean = false
@@ -59,7 +59,7 @@ class MemoryManager(name:String) extends Cache(name) {
   private[this] def scheduleTimer() : Unit = synchronized {
     require(!taskRunning)
     taskRunning = true
-    scheduler.scheduleOnce(ttl)(() => timeout())
+    scheduler.scheduleOnce(expireInterval)(() => timeout())
   }
 
   private[this] def timeout() = {
@@ -70,21 +70,14 @@ class MemoryManager(name:String) extends Cache(name) {
     }
   }
 
-  private[this] def checkTimeout(insertionTime:Long) : Boolean = {
-    if (compat.Platform.currentTime - (ttl.toSeconds*1000) <= insertionTime) {
-      true
-    } else {
-      false
-    }
-  }
-
   private[this] def removeExpiredItems() = synchronized {
+    val currentTime = compat.Platform.currentTime
     val cache = caches
     val expired:mutable.Map[String, List[String]] = cache map {
       nc =>
         val expireList = mutable.MutableList[String]()
         nc._2 foreach { cacheItem =>
-          if (checkTimeout(cacheItem._2.insertionTime)) {
+          if (currentTime > cacheItem._2.expirationTime) {
             expireList += cacheItem._1
           }
         }
@@ -105,15 +98,10 @@ class MemoryManager(name:String) extends Cache(name) {
     caches.clear()
   }
 
-  override protected def get(namespace: String, key: String): Future[Option[ChannelBuffer]] = {
+  override protected def get(namespace: String, key: String): Future[Option[Array[Byte]]] = {
     caches.get(namespace) match {
-      case Some(c) => Future {
-        c.get(key) match {
-          case Some(value) => Some(value.buffer)
-          case None => None
-        }
-      }
-      case None => Future { None }
+      case Some(c) => Future.successful(c.get(key).map(_.buffer))
+      case None => Future.successful(None)
     }
   }
 
@@ -121,8 +109,8 @@ class MemoryManager(name:String) extends Cache(name) {
     caches.get(namespace) match {
       case Some(c) =>
         c.clear()
-        Future { true }
-      case None => Future { false }
+        Future.successful(true)
+      case None => Future.successful(false)
     }
   }
 
@@ -184,10 +172,11 @@ class MemoryManager(name:String) extends Cache(name) {
     }
   }
 
-  override protected def add(namespace: String, key: String, value: ChannelBuffer): Future[Boolean] = {
+  override protected def add(namespace: String, key: String, value: Array[Byte], ttlSec: Option[Int]): Future[Boolean] = {
     caches.get(namespace) match {
       case Some(c) =>
-        c.put(key, TimedChannelBuffer(compat.Platform.currentTime, value))
+        val expirationTime = compat.Platform.currentTime + ttlSec.map(_ * 1000L).getOrElse(DEFAULT_TTL_SEC * 1000L)
+        c.put(key, TimedChannelBuffer(expirationTime, value))
         if (c.nonEmpty && !taskRunning) scheduleTimer()
         Future { true }
       case None => Future { false }
