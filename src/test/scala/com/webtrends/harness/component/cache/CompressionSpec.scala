@@ -23,6 +23,8 @@ import java.util.zip.Deflater
 import com.webtrends.harness.component.cache.BaseSpecCache.ns
 import com.webtrends.harness.component.cache.memory.MemoryManager
 
+import scala.concurrent.duration._
+import scala.concurrent.Await
 import scala.util.Random
 
 case class CompressedData(d:String = "") extends Cacheable[CompressedData] with Compression[CompressedData] {
@@ -36,14 +38,15 @@ case class StandardData(d:String = "") extends Cacheable[CompressedData] {
 
 class CompressionSpec extends BaseSpecCache {
   "A cacheable object with Compression" should {
+    import system.dispatcher
 
     "be cacheable" in {
       val obj = CompressedData("Some data")
       val key = new CacheKey(1, "basic", false)
       obj.writeInCache(cacheRef, Some(key))
 
-      val found = CompressedData().readFromCache(cacheRef, Some(key))
-      found must beEqualTo(Some(CompressedData("Some data"))).await()
+      val found = Await.result(CompressedData().readFromCache(cacheRef, Some(key)), 10 seconds)
+      found must beEqualTo(Some(CompressedData("Some data")))
     }
 
     "be compressed when cached" in {

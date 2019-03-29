@@ -20,6 +20,9 @@ package com.webtrends.harness.component.cache
 
 import com.webtrends.harness.component.cache.BaseSpecCache.ns
 
+import scala.concurrent.duration._
+import scala.concurrent.Await
+
 case class SimpleData(a:Int = 0, b:String = "", c:Double = 0.0) extends Cacheable[SimpleData] {
   override def namespace = ns
 }
@@ -36,14 +39,15 @@ case class SerialData(a:Int = 0, b:String = "", c:Double = 0.0) extends Cacheabl
 
 class CacheSpec extends BaseSpecCache {
   "A cacheable object" should {
+    import system.dispatcher
 
     "be cacheable" in {
       val obj = SimpleData(1, "two", 3.0)
       val key = new CacheKey(1,"two", false)
       obj.writeInCache(cacheRef, Some(key))
 
-      val found = SimpleData().readFromCache(cacheRef, Some(key))
-      found must beEqualTo(Some(SimpleData(1, "two", 3.0))).await()
+      val found = Await.result(SimpleData().readFromCache(cacheRef, Some(key)), 10 seconds)
+      found must beEqualTo(Some(SimpleData(1, "two", 3.0)))
     }
 
     "be cacheable" in {
@@ -51,8 +55,8 @@ class CacheSpec extends BaseSpecCache {
       val key = new CacheKey(4, "five", false)
       obj.writeInCache(cacheRef, Some(key))
 
-      val found = SerialData().readFromCache(cacheRef, Some(key))
-      found must beEqualTo(Some(SerialData(4, "five", 6.0))).await()
+      val found = Await.result(SerialData().readFromCache(cacheRef, Some(key)), 10 seconds)
+      found must beEqualTo(Some(SerialData(4, "five", 6.0)))
     }
   }
 }
