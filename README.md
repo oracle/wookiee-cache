@@ -1,8 +1,8 @@
 #Wookiee - Component Caching
 
-[![Build Status](https://travis-ci.org/Webtrends/wookiee-cache.svg?branch=master)](https://travis-ci.org/Webtrends/wookiee-cache) [![Coverage Status](https://coveralls.io/repos/Webtrends/wookiee-cache/badge.svg?branch=master&service=github)](https://coveralls.io/github/Webtrends/wookiee-cache?branch=master) [![Latest Release](https://img.shields.io/github/release/webtrends/wookiee-cache.svg)](https://github.com/Webtrends/wookiee-cache/releases) [![License](http://img.shields.io/:license-Apache%202-red.svg)](http://www.apache.org/licenses/LICENSE-2.0.txt)
+[![Build Status](https://travis-ci.org/oracle/wookiee-cache.svg?branch=master)](https://travis-ci.org/oracle/wookiee-cache) [![Coverage Status](https://coveralls.io/repos/oracle/wookiee-cache/badge.svg?branch=master&service=github)](https://coveralls.io/github/oracle/wookiee-cache?branch=master) [![Latest Release](https://img.shields.io/github/release/oracle/wookiee-cache.svg)](https://github.com/oracle/wookiee-cache/releases) [![License](http://img.shields.io/:license-Apache%202-red.svg)](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
-[Main Wookiee Project](https://github.com/Webtrends/wookiee)
+[Main Wookiee Project](https://github.com/oracle/wookiee)
 
 For Configuration information see [Caching Config](docs/config.md)
 
@@ -20,7 +20,7 @@ To add Wookiee caching you need to include the dependency into your maven pom, l
 ```
 <dependency>
   <groupId>com.webtrends</groupId>
-  <artifactId>wookiee-cache</artifactId>
+  <artifactId>wookiee-cache_2.11</artifactId>
   <version>${platform.version}</version>
 </dependency>
 ```
@@ -28,7 +28,7 @@ This would then download the libraries that allow using the Cacheable Trait. By 
 ```
 <dependency>
   <groupId>com.webtrends</groupId>
-  <artifactId>wookiee-cache-memcache</artifactId>
+  <artifactId>wookiee-cache-memcache_2.11</artifactId>
   <version>${platform.version}</version>
 </dependency>
 ```
