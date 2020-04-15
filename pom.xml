@@ -12,8 +12,8 @@
         <build.number>999</build.number>
         <build.version>1.0.0</build.version>
         <release.type>SNAPSHOT</release.type>
-        <scala.artifact.version>2.11</scala.artifact.version>
-        <scala.version>2.11.12</scala.version>
+        <scala.artifact.version>2.12</scala.artifact.version>
+        <scala.version>2.12.10</scala.version>
         <build>${build.number}</build>
         <build-artifact-name>${project.artifactId}-${project.version}</build-artifact-name>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -22,7 +22,7 @@
     </properties>
 
     <groupId>com.webtrends</groupId>
-    <artifactId>wookiee-cache_2.11</artifactId>
+    <artifactId>wookiee-cache_2.12</artifactId>
     <version>1.2-SNAPSHOT</version>
     <packaging>jar</packaging>
     <name>Component: Cache</name>
@@ -80,12 +80,15 @@
             <groupId>${project.groupId}</groupId>
             <artifactId>wookiee-core_${scala.artifact.version}</artifactId>
             <version>${wookiee.core.version}</version>
+            <scope>system</scope>
+            <systemPath>${basedir}/src/main/resources/wookiee-core_2.12-2.0-SNAPSHOT.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>wookiee-test_${scala.artifact.version}</artifactId>
             <version>${wookiee.core.version}</version>
-            <scope>test</scope>
+            <scope>system</scope>
+            <systemPath>${basedir}/src/main/resources/wookiee-test_2.12-2.0-SNAPSHOT.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>net.liftweb</groupId>
@@ -102,6 +105,36 @@
             <artifactId>scalatest-maven-plugin</artifactId>
             <version>1.0-M2</version>
         </dependency>
+        <dependency>
+            <groupId>org.specs2</groupId>
+            <artifactId>specs2-junit_${scala.artifact.version}</artifactId>
+            <version>3.9.2</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.typesafe.akka</groupId>
+            <artifactId>akka-testkit_${scala.artifact.version}</artifactId>
+            <version>2.5.23</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.11</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.typesafe.akka</groupId>
+            <artifactId>akka-actor_${scala.artifact.version}</artifactId>
+            <version>2.5.23</version>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/org.jboss.netty/netty -->
+        <dependency>
+            <groupId>org.jboss.netty</groupId>
+            <artifactId>netty</artifactId>
+            <version>3.2.0.Final</version>
+        </dependency>
+
     </dependencies>
 
     <build>
