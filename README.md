@@ -20,7 +20,7 @@ To add Wookiee caching you need to include the dependency into your maven pom, l
 ```
 <dependency>
   <groupId>com.webtrends</groupId>
-  <artifactId>wookiee-cache_2.11</artifactId>
+  <artifactId>wookiee-cache_2.12</artifactId>
   <version>${platform.version}</version>
 </dependency>
 ```
@@ -28,7 +28,7 @@ This would then download the libraries that allow using the Cacheable Trait. By 
 ```
 <dependency>
   <groupId>com.webtrends</groupId>
-  <artifactId>wookiee-cache-memcache_2.11</artifactId>
+  <artifactId>wookiee-cache-memcache_2.12</artifactId>
   <version>${platform.version}</version>
 </dependency>
 ```
