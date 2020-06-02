@@ -23,6 +23,8 @@
 
     <groupId>com.webtrends</groupId>
     <artifactId>wookiee-cache_2.11</artifactId>
+    <!-- For non-tagged builds, the branch will be inserted into this version,
+    e.g. 2.0-SNAPSHOT -> 2.0-$branch-SNAPSHOT -->
     <version>1.2-SNAPSHOT</version>
     <packaging>jar</packaging>
     <name>Component: Cache</name>

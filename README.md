@@ -111,3 +111,11 @@ This is not always the best approach, so another way is to allow the user to set
 Mix the Compression trait into cacheable objects to deflate when _writeInCache_ and inflate when _readFromCache_.
 
 * namespace - Override this value to change the default level of compression
+
+### Increasing Artifact Version
+To bump the version of Wookiee simply increase it in the pom file. If you are
+building a branch then it will automatically insert the branch name before SNAPSHOT.
+So for example if the pom has 2.0-SNAPSHOT as a version the final artifact will end up
+as 2.0-$branch-SNAPSHOT. If you create a tagged release in github, or if you change the
+pom to a version that doesn't contain "SNAPSHOT" then the final artifact version will 
+be literally what was in the tag/pom.
