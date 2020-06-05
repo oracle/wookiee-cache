@@ -20,7 +20,6 @@ package com.webtrends.harness.component.cache
 
 import akka.pattern._
 import com.webtrends.harness.component.Component
-import org.jboss.netty.buffer.{ChannelBuffers, ChannelBuffer}
 import scala.concurrent.Future
 
 // Messages for Caching

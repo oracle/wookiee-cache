@@ -21,16 +21,13 @@ package com.webtrends.harness.component.cache
 import java.util.concurrent.TimeUnit._
 
 import akka.actor.{ActorSystem, Props}
-import akka.testkit.TestActorRef
+import akka.testkit.{TestActorRef, TestKit}
 import akka.util.Timeout
 import com.webtrends.harness.component.cache.memory.MemoryManager
-import org.junit.runner.RunWith
-import org.specs2.runner.JUnitRunner
 
-@RunWith(classOf[JUnitRunner])
-class BaseSpecCache extends TestKitSpecificationWithJUnit(ActorSystem("test")) {
-  val cacheRef = TestActorRef(Props(classOf[MemoryManager],"test-memory-cache"))
-  implicit val timeout = Timeout(2, SECONDS)
+class BaseSpecCache extends TestKit(ActorSystem("test")) {
+  val cacheRef: TestActorRef[Nothing] = TestActorRef(Props(classOf[MemoryManager],"test-memory-cache"))
+  implicit val timeout: Timeout = Timeout(2, SECONDS)
 
   cacheRef ! CreateCache(
     CacheConfig(

@@ -21,8 +21,7 @@ package com.webtrends.harness.component.cache
 import java.nio.charset.StandardCharsets
 import java.util.zip.{Deflater, Inflater}
 
-import net.liftweb.json.Extraction._
-import net.liftweb.json._
+import org.json4s.jackson.Serialization
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -38,12 +37,13 @@ trait Compression[T] {
   protected def level:Int = Deflater.DEFAULT_COMPRESSION
 
   override protected def extract(obj: Array[Byte])(implicit m: Manifest[T]): Option[T] = {
-    implicit val buffer = new Array[Byte](obj.length)
+    implicit val buffer: Array[Byte] = new Array[Byte](obj.length)
     inflater.reset()
     inflater.setInput(obj)
-    Some(JsonParser.parse(new String(inflate(), StandardCharsets.UTF_8)).extract[T])
+    Some(Serialization.read[T](new String(inflate(), StandardCharsets.UTF_8)))
   }
 
+  @scala.annotation.tailrec
   private def inflate(result: ArrayBuffer[Byte] = ArrayBuffer.empty[Byte])(implicit buffer: Array[Byte]): Array[Byte] = {
     val len = inflater.inflate(buffer)
 
@@ -55,13 +55,14 @@ trait Compression[T] {
   }
 
   override protected def getBytes: Array[Byte] = {
-    implicit val buffer = new Array[Byte](65536)
+    implicit val buffer: Array[Byte] = new Array[Byte](65536)
     deflater.reset()
-    deflater.setInput(compactRender(decompose(this)).getBytes(StandardCharsets.UTF_8))
+    deflater.setInput(Serialization.write(this).getBytes(StandardCharsets.UTF_8))
     deflater.finish()
     deflate()
   }
 
+  @scala.annotation.tailrec
   private def deflate(result: ArrayBuffer[Byte] = ArrayBuffer.empty[Byte])(implicit buffer:Array[Byte]): Array[Byte] = {
     val len = deflater.deflate(buffer)
 

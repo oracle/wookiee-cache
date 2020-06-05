@@ -20,7 +20,6 @@ package com.webtrends.harness.component.cache.memory
 
 import com.webtrends.harness.component.cache.{CacheConfig, Cache}
 import com.webtrends.harness.health.{ComponentState, HealthComponent}
-import org.jboss.netty.buffer.ChannelBuffer
 import scala.concurrent._
 import scala.collection.mutable
 
@@ -36,7 +35,7 @@ import scala.concurrent.duration.Duration
 case class TimedChannelBuffer(expirationTime:Long, buffer:Array[Byte])
 
 object MemoryManager {
-  val caches = mutable.Map[String, mutable.Map[String, TimedChannelBuffer]]()
+  val caches: mutable.Map[String, mutable.Map[String, TimedChannelBuffer]] = mutable.Map[String, mutable.Map[String, TimedChannelBuffer]]()
 }
 
 class MemoryManager(name:String) extends Cache(name) {

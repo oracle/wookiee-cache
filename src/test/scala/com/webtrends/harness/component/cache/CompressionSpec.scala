@@ -22,21 +22,23 @@ import java.util.zip.Deflater
 
 import com.webtrends.harness.component.cache.BaseSpecCache.ns
 import com.webtrends.harness.component.cache.memory.MemoryManager
+import org.scalatest.WordSpecLike
+import org.scalatest.matchers.must.Matchers
 
 import scala.concurrent.duration._
 import scala.concurrent.Await
 import scala.util.Random
 
 case class CompressedData(d:String = "") extends Cacheable[CompressedData] with Compression[CompressedData] {
-  override def level = Deflater.BEST_COMPRESSION
-  override def namespace = ns
+  override def level: Int = Deflater.BEST_COMPRESSION
+  override def namespace: String = ns
 }
 
 case class StandardData(d:String = "") extends Cacheable[CompressedData] {
-  override def namespace = ns
+  override def namespace: String = ns
 }
 
-class CompressionSpec extends BaseSpecCache {
+class CompressionSpec extends BaseSpecCache with WordSpecLike with Matchers {
   "A cacheable object with Compression" should {
     import system.dispatcher
 
@@ -46,7 +48,7 @@ class CompressionSpec extends BaseSpecCache {
       obj.writeInCache(cacheRef, Some(key))
 
       val found = Await.result(CompressedData().readFromCache(cacheRef, Some(key)), 10 seconds)
-      found must beEqualTo(Some(CompressedData("Some data")))
+      found mustBe Some(CompressedData("Some data"))
     }
 
     "be compressed when cached" in {
@@ -63,9 +65,9 @@ class CompressionSpec extends BaseSpecCache {
       cObj.writeInCache(cacheRef, Some(cKey))
       val cSize = cacheActor.caches(ns)(cKey.toString()).buffer.length
 
-      cSize must beLessThan(uSize)
-      cObj.compressionRatio.get must beGreaterThan(1.0d)
-      cObj.compressedSize.get must beLessThan(uSize.toLong)
+      cSize must be < uSize
+      cObj.compressionRatio.get must be > 1.0d
+      cObj.compressedSize.get must be < uSize.toLong
     }
   }
 }

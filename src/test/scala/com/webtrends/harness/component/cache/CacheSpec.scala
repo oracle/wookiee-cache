@@ -19,16 +19,18 @@
 package com.webtrends.harness.component.cache
 
 import com.webtrends.harness.component.cache.BaseSpecCache.ns
+import org.scalatest.WordSpecLike
+import org.scalatest.matchers.must.Matchers
 
 import scala.concurrent.duration._
 import scala.concurrent.Await
 
 case class SimpleData(a:Int = 0, b:String = "", c:Double = 0.0) extends Cacheable[SimpleData] {
-  override def namespace = ns
+  override def namespace: String = ns
 }
 
 case class SerialData(a:Int = 0, b:String = "", c:Double = 0.0) extends Cacheable[SimpleData] with Serializable {
-  override def namespace = ns
+  override def namespace: String = ns
 
   override protected def getBytes: Array[Byte] = serialToBytes(this)
 
@@ -37,7 +39,7 @@ case class SerialData(a:Int = 0, b:String = "", c:Double = 0.0) extends Cacheabl
   }
 }
 
-class CacheSpec extends BaseSpecCache {
+class CacheSpec extends BaseSpecCache with WordSpecLike with Matchers {
   "A cacheable object" should {
     import system.dispatcher
 
@@ -47,16 +49,16 @@ class CacheSpec extends BaseSpecCache {
       obj.writeInCache(cacheRef, Some(key))
 
       val found = Await.result(SimpleData().readFromCache(cacheRef, Some(key)), 10 seconds)
-      found must beEqualTo(Some(SimpleData(1, "two", 3.0)))
+      found mustBe Some(SimpleData(1, "two", 3.0))
     }
 
-    "be cacheable" in {
+    "be cacheable with five" in {
       val obj = SerialData(4, "five", 6.0)
       val key = new CacheKey(4, "five", false)
       obj.writeInCache(cacheRef, Some(key))
 
       val found = Await.result(SerialData().readFromCache(cacheRef, Some(key)), 10 seconds)
-      found must beEqualTo(Some(SerialData(4, "five", 6.0)))
+      found mustBe Some(SerialData(4, "five", 6.0))
     }
   }
 }

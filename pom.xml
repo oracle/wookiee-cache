@@ -77,6 +77,7 @@
             <url>http://oss.jfrog.org/oss-snapshot-local</url>
         </repository>
     </repositories>
+
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>
@@ -90,9 +91,14 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>net.liftweb</groupId>
-            <artifactId>lift-json-ext_${scala.artifact.version}</artifactId>
-            <version>3.0.2</version>
+            <groupId>org.json4s</groupId>
+            <artifactId>json4s-jackson_${scala.artifact.version}</artifactId>
+            <version>3.6.8</version>
+        </dependency>
+        <dependency>
+            <groupId>org.json4s</groupId>
+            <artifactId>json4s-ext_${scala.artifact.version}</artifactId>
+            <version>3.6.8</version>
         </dependency>
         <dependency>
             <groupId>org.scalatest</groupId>

@@ -21,18 +21,16 @@ package com.webtrends.harness.component.cache
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, ObjectInputStream, ObjectOutputStream}
 import java.nio.charset.StandardCharsets
 
-import akka.pattern.Patterns
 import akka.actor.{ActorRef, ActorSelection}
-import net.liftweb.json._
-
-import scala.concurrent._
-import net.liftweb.json.Extraction._
-
-import scala.util.Success
-import scala.util.Failure
+import akka.pattern.Patterns
 import akka.util.Timeout
 import com.webtrends.harness.utils.Loan._
-import net.liftweb.json.ext.JodaTimeSerializers
+import org.json4s.ext.JodaTimeSerializers
+import org.json4s.jackson.Serialization
+import org.json4s.{DefaultFormats, Formats, NoTypeHints}
+
+import scala.concurrent._
+import scala.util.{Failure, Success}
 
 /**
  * Trait to help with caching objects in the wookiee-cache
@@ -43,9 +41,9 @@ import net.liftweb.json.ext.JodaTimeSerializers
  * Also need to implement a strategy where everything will time out every hour or something like that.
  */
 trait Cacheable[T] extends Serializable {
-  this : Serializable =>
+  this: Serializable =>
 
-  @transient implicit def liftJsonFormats:Formats = DefaultFormats.lossless + NoTypeHints ++ JodaTimeSerializers.all
+  @transient implicit def jsonFormats: Formats = DefaultFormats.lossless + NoTypeHints ++ JodaTimeSerializers.all
 
   /**
    * Gets the ttl for the data in the cache, by default will be set to None which means it will never time out
@@ -78,7 +76,7 @@ trait Cacheable[T] extends Serializable {
    * @return
    */
   protected def extract(obj:Array[Byte])(implicit m: Manifest[T]) : Option[T] = {
-    Some(JsonParser.parse(new String(obj, StandardCharsets.UTF_8)).extract[T])
+    Some(Serialization.read[T](new String(obj, StandardCharsets.UTF_8)))
   }
 
   /**
@@ -95,11 +93,11 @@ trait Cacheable[T] extends Serializable {
 
   /**
    * getBytes function allows cacheable object to have control over how it writes the data to memcache
-   * By default it will use Lift JSON to decompose then render the object from json to a string and
+   * By default it will use JSON to decompose then render the object from json to a string and
    * then simply call getBytes on the string
    */
-  protected def getBytes : Array[Byte] = {
-    compactRender(decompose(this)).getBytes(StandardCharsets.UTF_8)
+  protected def getBytes: Array[Byte] = {
+    Serialization.write(this).getBytes(StandardCharsets.UTF_8)
   }
 
   /**
