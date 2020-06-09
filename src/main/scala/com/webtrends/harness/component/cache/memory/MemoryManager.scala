@@ -18,11 +18,12 @@
  */
 package com.webtrends.harness.component.cache.memory
 
-import com.webtrends.harness.component.cache.{CacheConfig, Cache}
+import com.webtrends.harness.component.cache.{Cache, CacheConfig}
 import com.webtrends.harness.health.{ComponentState, HealthComponent}
+
 import scala.concurrent._
 import scala.collection.mutable
-
+import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration.Duration
 
 /**
@@ -69,12 +70,12 @@ class MemoryManager(name:String) extends Cache(name) {
     }
   }
 
-  private[this] def removeExpiredItems() = synchronized {
+  private[this] def removeExpiredItems(): Unit = synchronized {
     val currentTime = compat.Platform.currentTime
     val cache = caches
     val expired:mutable.Map[String, List[String]] = cache map {
       nc =>
-        val expireList = mutable.MutableList[String]()
+        val expireList = ListBuffer[String]()
         nc._2 foreach { cacheItem =>
           if (currentTime > cacheItem._2.expirationTime) {
             expireList += cacheItem._1

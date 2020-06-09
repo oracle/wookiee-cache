@@ -47,7 +47,7 @@ class CompressionSpec extends BaseSpecCache with WordSpecLike with Matchers {
       val key = new CacheKey(1, "basic", false)
       obj.writeInCache(cacheRef, Some(key))
 
-      val found = Await.result(CompressedData().readFromCache(cacheRef, Some(key)), 10 seconds)
+      val found = Await.result(CompressedData().readFromCache(cacheRef, Some(key)), 10.seconds)
       found mustBe Some(CompressedData("Some data"))
     }
 

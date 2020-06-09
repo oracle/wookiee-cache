@@ -48,7 +48,7 @@ class CacheSpec extends BaseSpecCache with WordSpecLike with Matchers {
       val key = new CacheKey(1,"two", false)
       obj.writeInCache(cacheRef, Some(key))
 
-      val found = Await.result(SimpleData().readFromCache(cacheRef, Some(key)), 10 seconds)
+      val found = Await.result(SimpleData().readFromCache(cacheRef, Some(key)), 10.seconds)
       found mustBe Some(SimpleData(1, "two", 3.0))
     }
 
@@ -57,7 +57,7 @@ class CacheSpec extends BaseSpecCache with WordSpecLike with Matchers {
       val key = new CacheKey(4, "five", false)
       obj.writeInCache(cacheRef, Some(key))
 
-      val found = Await.result(SerialData().readFromCache(cacheRef, Some(key)), 10 seconds)
+      val found = Await.result(SerialData().readFromCache(cacheRef, Some(key)), 10.seconds)
       found mustBe Some(SerialData(4, "five", 6.0))
     }
   }
