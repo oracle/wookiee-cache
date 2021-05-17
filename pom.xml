@@ -90,7 +90,7 @@
         <dependency>
             <groupId>net.liftweb</groupId>
             <artifactId>lift-json-ext_${scala.artifact.version}</artifactId>
-            <version>3.0.2</version>
+            <version>3.4.3</version>
         </dependency>
         <dependency>
             <groupId>org.scalatest</groupId>
