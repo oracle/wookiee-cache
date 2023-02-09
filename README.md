@@ -6,6 +6,9 @@
 
 For Configuration information see [Caching Config](docs/config.md)
 
+## Contributing
+This project is not accepting external contributions at this time. For bugs or enhancement requests, please file a GitHub issue unless it’s security related. When filing a bug remember that the better written the bug is, the more likely it is to be fixed. If you think you’ve found a security vulnerability, do not raise a GitHub issue and follow the instructions in our [security policy](./SECURITY.md).
+
 ##Creating a Cache
 
 Before we can create cache objects, we need to do the following:
@@ -111,3 +114,7 @@ This is not always the best approach, so another way is to allow the user to set
 Mix the Compression trait into cacheable objects to deflate when _writeInCache_ and inflate when _readFromCache_.
 
 * namespace - Override this value to change the default level of compression
+
+## License
+Copyright (c) 2004 Oracle and/or its affiliates.
+Released under the Apache License Version 2.0
