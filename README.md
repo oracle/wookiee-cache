@@ -1,4 +1,4 @@
-#Wookiee - Component Caching
+# Wookiee - Component Caching
 
 [![Build Status](https://travis-ci.org/oracle/wookiee-cache.svg?branch=master)](https://travis-ci.org/oracle/wookiee-cache) [![Coverage Status](https://coveralls.io/repos/oracle/wookiee-cache/badge.svg?branch=master&service=github)](https://coveralls.io/github/oracle/wookiee-cache?branch=master) [![Latest Release](https://img.shields.io/github/release/oracle/wookiee-cache.svg)](https://github.com/oracle/wookiee-cache/releases) [![License](http://img.shields.io/:license-Apache%202-red.svg)](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
@@ -115,6 +115,9 @@ Mix the Compression trait into cacheable objects to deflate when _writeInCache_ 
 
 * namespace - Override this value to change the default level of compression
 
+## Security
+Please consult the [security guide](./SECURITY.md) for our responsible security vulnerability disclosure process
+
 ## License
-Copyright (c) 2004 Oracle and/or its affiliates.
+Copyright (c) 2004, 2023 Oracle and/or its affiliates.
 Released under the Apache License Version 2.0
